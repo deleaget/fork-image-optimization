@@ -138,7 +138,6 @@ export class ImageOptimizationStack extends Stack {
         ignorePublicAcls: false,
         restrictPublicBuckets: false,
       },
-      publicReadAccess: true,
       objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
       accessControl: s3.BucketAccessControl.PUBLIC_READ,
     });
