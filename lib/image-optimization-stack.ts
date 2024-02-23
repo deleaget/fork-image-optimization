@@ -132,12 +132,6 @@ export class ImageOptimizationStack extends Stack {
           expiration: Duration.days(parseInt(S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION)),
         },
       ],
-      blockPublicAccess: {
-        blockPublicAcls: false,
-        blockPublicPolicy: false,
-        ignorePublicAcls: false,
-        restrictPublicBuckets: false,
-      },
       objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
       accessControl: s3.BucketAccessControl.PUBLIC_READ,
     });
