@@ -123,26 +123,16 @@ export class ImageOptimizationStack extends Stack {
     }
 
     // create bucket for transformed images if enabled in the architecture
-    if (STORE_TRANSFORMED_IMAGES === 'true') {
-      // originalImageBucket = s3.Bucket.fromBucketName(this, 'imported-original-image-bucket', S3_TRANSFORMED_IMAGE_BUCKET_NAME);
-      // new CfnOutput(this, 'OriginalImagesS3Bucket', {
-      //     description: 'S3 bucket where original images are stored',
-      //     value: originalImageBucket.bucketName
-      // });
-
-      // transformedImageBucket = s3.Bucket.fromBucketName(this, 'imported-original-image-bucket', S3_IMAGE_BUCKET_NAME);
-      transformedImageBucket = new s3.Bucket(this, 's3-transformed-image-bucket', {
-        bucketName: S3_TRANSFORMED_IMAGE_BUCKET_NAME,
-        removalPolicy: RemovalPolicy.DESTROY,
-        autoDeleteObjects: true,
-        lifecycleRules: [
-          {
-            expiration: Duration.days(parseInt(S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION)),
-          },
-        ],
-        publicReadAccess: true
-      });
-    }
+    transformedImageBucket = new s3.Bucket(this, 's3-transformed-image-bucket', {
+      bucketName: S3_TRANSFORMED_IMAGE_BUCKET_NAME,
+      removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      lifecycleRules: [
+        {
+          expiration: Duration.days(parseInt(S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION)),
+        },
+      ]
+    });
 
     // prepare env variable for Lambda 
     var lambdaEnv: LambdaEnv = {
@@ -158,9 +148,14 @@ export class ImageOptimizationStack extends Stack {
       actions: ['s3:GetObject'],
       resources: ['arn:aws:s3:::' + originalImageBucket.bucketName + '/*'],
     });
+    // IAM policy to read from the S3 bucket containing the transformed images
+    const s3ReadTransformedImagesPolicy = new iam.PolicyStatement({
+      actions: ['s3:GetObject'],
+      resources: ['arn:aws:s3:::' + transformedImageBucket.bucketName + '/*'],
+    });
 
     // statements of the IAM policy to attach to Lambda
-    var iamPolicyStatements = [s3ReadOriginalImagesPolicy];
+    var iamPolicyStatements = [s3ReadOriginalImagesPolicy, s3ReadTransformedImagesPolicy];
 
     // Create Lambda for image processing
     var lambdaProps = {
