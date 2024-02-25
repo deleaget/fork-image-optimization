@@ -140,8 +140,7 @@ export class ImageOptimizationStack extends Stack {
         ignorePublicAcls: false,
         restrictPublicBuckets: false,
       },
-      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
-      accessControl: s3.BucketAccessControl.PRIVATE,
+      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER
     });
 
     // prepare env variable for Lambda 
