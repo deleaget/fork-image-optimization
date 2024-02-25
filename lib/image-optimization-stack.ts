@@ -27,6 +27,8 @@ var LAMBDA_MEMORY = '1500';
 var LAMBDA_TIMEOUT = '60';
 // Whether to deploy a sample website referenced in https://aws.amazon.com/blogs/networking-and-content-delivery/image-optimization-using-amazon-cloudfront-and-aws-lambda/
 var DEPLOY_SAMPLE_WEBSITE = 'false';
+var STARPRINCIPAL = new iam.StarPrincipal();
+
 
 type ImageDeliveryCacheBehaviorConfig = {
   origin: any;
@@ -159,6 +161,8 @@ export class ImageOptimizationStack extends Stack {
     // IAM policy to read from the S3 bucket containing the transformed images
     const s3ReadTransformedImagesPolicy = new iam.PolicyStatement({
       actions: ['s3:GetObject'],
+      effect: iam.Effect.ALLOW,
+      principals: [STARPRINCIPAL],
       resources: ['arn:aws:s3:::' + transformedImageBucket.bucketName + '/*'],
     });
 
