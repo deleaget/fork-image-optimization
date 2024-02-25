@@ -27,7 +27,6 @@ var LAMBDA_MEMORY = '1500';
 var LAMBDA_TIMEOUT = '60';
 // Whether to deploy a sample website referenced in https://aws.amazon.com/blogs/networking-and-content-delivery/image-optimization-using-amazon-cloudfront-and-aws-lambda/
 var DEPLOY_SAMPLE_WEBSITE = 'false';
-var STARPRINCIPAL = new iam.StarPrincipal();
 
 
 type ImageDeliveryCacheBehaviorConfig = {
@@ -136,8 +135,8 @@ export class ImageOptimizationStack extends Stack {
       ],
       blockPublicAccess: {
         blockPublicAcls: true,
-        blockPublicPolicy: true,
-        ignorePublicAcls: false,
+        blockPublicPolicy: false,
+        ignorePublicAcls: true,
         restrictPublicBuckets: false,
       },
       objectOwnership: s3.ObjectOwnership.OBJECT_WRITER
@@ -162,7 +161,7 @@ export class ImageOptimizationStack extends Stack {
       new iam.PolicyStatement({
         actions: ['s3:GetObject'],
         effect: iam.Effect.ALLOW,
-        principals: [STARPRINCIPAL],
+        principals: [new iam.StarPrincipal()],
         resources: [transformedImageBucket.arnForObjects('*')],
       })
     )
