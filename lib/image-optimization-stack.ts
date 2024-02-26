@@ -151,6 +151,7 @@ export class ImageOptimizationStack extends Stack {
           maxAge: 3000,
         },
       ],
+      publicReadAccess: true,
     });
 
     // prepare env variable for Lambda 
