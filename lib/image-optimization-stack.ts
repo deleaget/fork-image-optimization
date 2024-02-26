@@ -151,6 +151,7 @@ export class ImageOptimizationStack extends Stack {
           maxAge: 3000,
         },
       ],
+      publicReadAccess: true,
     });
 
     // prepare env variable for Lambda 
@@ -186,12 +187,12 @@ export class ImageOptimizationStack extends Stack {
     // )
 
     // Define the S3 bucket policy to allow public read access
-    const policy = new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      principals: [new iam.StarPrincipal()],
-      actions: ['s3:GetObject'],
-      resources: [transformedImageBucket.arnForObjects('*')]
-    });
+    // const policy = new iam.PolicyStatement({
+    //   effect: iam.Effect.ALLOW,
+    //   principals: [new iam.StarPrincipal()],
+    //   actions: ['s3:GetObject'],
+    //   resources: [transformedImageBucket.arnForObjects('*')]
+    // });
 
     // Attach the S3 bucket policy to the bucket
     transformedImageBucket.addToResourcePolicy(policy);
@@ -240,10 +241,15 @@ export class ImageOptimizationStack extends Stack {
 
       // write policy for Lambda on the s3 bucket for transformed images
       var s3WriteTransformedImagesPolicy = new iam.PolicyStatement({
+        actions: ['s3:PutObject'],
+        resources: ['arn:aws:s3:::' + transformedImageBucket.bucketName + '/*'],
+      });
+      var s3WriteTransformedImagesPolicyAcl = new iam.PolicyStatement({
         actions: ['s3:PutObjectAcl'],
         resources: ['arn:aws:s3:::' + transformedImageBucket.bucketName + '/*'],
       });
       iamPolicyStatements.push(s3WriteTransformedImagesPolicy);
+      iamPolicyStatements.push(s3WriteTransformedImagesPolicyAcl);
     } else {
       console.log("else transformedImageBucket");
       imageOrigin = new origins.HttpOrigin(imageProcessingDomainName, {
