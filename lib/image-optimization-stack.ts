@@ -141,7 +141,7 @@ export class ImageOptimizationStack extends Stack {
         ignorePublicAcls: true,
         restrictPublicBuckets: true,
       },
-      publicReadAccess: true,
+      publicReadAccess: false,
       cors: [
         {
           allowedOrigins: ['*'],
