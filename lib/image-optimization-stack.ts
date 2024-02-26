@@ -151,7 +151,7 @@ export class ImageOptimizationStack extends Stack {
           maxAge: 3000,
         },
       ],
-      publicReadAccess: true,
+      publicReadAccess: false,
     });
 
     // prepare env variable for Lambda 
@@ -169,14 +169,14 @@ export class ImageOptimizationStack extends Stack {
       resources: [originalImageBucket.arnForObjects('*')],
     });
     // IAM policy to read from the S3 bucket containing the transformed images
-    // transformedImageBucket.addToResourcePolicy(
-    //   new iam.PolicyStatement({
-    //     actions: ['s3:GetObject'],
-    //     effect: iam.Effect.ALLOW,
-    //     principals: [new iam.StarPrincipal()],
-    //     resources: [transformedImageBucket.arnForObjects('*')],
-    //   })
-    // )
+    transformedImageBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:GetObject'],
+        effect: iam.Effect.ALLOW,
+        principals: [new iam.StarPrincipal()],
+        resources: [transformedImageBucket.arnForObjects('*')],
+      })
+    )
 
     // transformedImageBucket.addToResourcePolicy(
     //   new iam.PolicyStatement({
