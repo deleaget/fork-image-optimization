@@ -135,7 +135,7 @@ export class ImageOptimizationStack extends Stack {
       ],
       blockPublicAccess: {
         blockPublicAcls: false,
-        blockPublicPolicy: true,
+        blockPublicPolicy: false,
         ignorePublicAcls: false,
         restrictPublicBuckets: false,
       },
