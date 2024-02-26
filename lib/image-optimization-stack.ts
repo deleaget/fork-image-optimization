@@ -133,24 +133,13 @@ export class ImageOptimizationStack extends Stack {
           expiration: Duration.days(parseInt(S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION)),
         },
       ],
-      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
-      accessControl: s3.BucketAccessControl.PUBLIC_READ,
       blockPublicAccess: {
-        blockPublicAcls: true,
-        blockPublicPolicy: true,
-        ignorePublicAcls: true,
-        restrictPublicBuckets: true,
+        blockPublicAcls: false,
+        blockPublicPolicy: false,
+        ignorePublicAcls: false,
+        restrictPublicBuckets: false,
       },
-      publicReadAccess: false,
-      cors: [
-        {
-          allowedOrigins: ['*'],
-          allowedMethods: [s3.HttpMethods.GET],
-          allowedHeaders: ['*'],
-          exposedHeaders: [],
-          maxAge: 3000
-        }
-      ],
+      accessControl: s3.BucketAccessControl.PUBLIC_READ,
     });
 
     // prepare env variable for Lambda 
@@ -168,14 +157,14 @@ export class ImageOptimizationStack extends Stack {
       resources: [originalImageBucket.arnForObjects('*')],
     });
     // IAM policy to read from the S3 bucket containing the transformed images
-    transformedImageBucket.addToResourcePolicy(
-      new iam.PolicyStatement({
-        actions: ['s3:GetObject'],
-        effect: iam.Effect.ALLOW,
-        principals: [new iam.StarPrincipal()],
-        resources: [transformedImageBucket.arnForObjects('*')],
-      })
-    )
+    // transformedImageBucket.addToResourcePolicy(
+    //   new iam.PolicyStatement({
+    //     actions: ['s3:GetObject'],
+    //     effect: iam.Effect.ALLOW,
+    //     principals: [new iam.StarPrincipal()],
+    //     resources: [transformedImageBucket.arnForObjects('*')],
+    //   })
+    // )
 
 
     // statements of the IAM policy to attach to Lambda
