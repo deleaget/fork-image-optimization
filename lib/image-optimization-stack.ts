@@ -134,10 +134,10 @@ export class ImageOptimizationStack extends Stack {
         },
       ],
       blockPublicAccess: {
-        blockPublicAcls: true,
+        blockPublicAcls: false,
         blockPublicPolicy: false,
-        ignorePublicAcls: true,
-        restrictPublicBuckets: true,
+        ignorePublicAcls: false,
+        restrictPublicBuckets: false,
       },
       objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
       cors: [
@@ -151,7 +151,6 @@ export class ImageOptimizationStack extends Stack {
           maxAge: 3000,
         },
       ],
-      publicReadAccess: true,
     });
 
     // prepare env variable for Lambda 
