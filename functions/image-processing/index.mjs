@@ -98,7 +98,6 @@ export const handler = async (event) => {
                     'cache-control': TRANSFORMED_IMAGE_CACHE_TTL,
                 },
                 Acl: 'public-read',
-                GrantRead: 'http://acs.amazonaws.com/groups/global/AllUsers'
             })
             await s3Client.send(putImageCommand);
             timingLog = timingLog + ',img-upload;dur=' + parseInt(performance.now() - startTime);

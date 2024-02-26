@@ -176,13 +176,25 @@ export class ImageOptimizationStack extends Stack {
     //     resources: [transformedImageBucket.arnForObjects('*')],
     //   })
     // )
-    transformedImageBucket.addToResourcePolicy(
-      new iam.PolicyStatement({
-        actions: ['s3:GetObject'],
-        effect: iam.Effect.ALLOW,
-        resources: [transformedImageBucket.arnForObjects('*')],
-      })
-    )
+
+    // transformedImageBucket.addToResourcePolicy(
+    //   new iam.PolicyStatement({
+    //     actions: ['s3:GetObject'],
+    //     effect: iam.Effect.ALLOW,
+    //     resources: [transformedImageBucket.arnForObjects('*')],
+    //   })
+    // )
+
+    // Define the S3 bucket policy to allow public read access
+    const policy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      principals: [new iam.StarPrincipal()],
+      actions: ['s3:GetObject'],
+      resources: [transformedImageBucket.arnForObjects('*')]
+    });
+
+    // Attach the S3 bucket policy to the bucket
+    transformedImageBucket.addToResourcePolicy(policy);
 
 
     // statements of the IAM policy to attach to Lambda
