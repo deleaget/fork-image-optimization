@@ -195,7 +195,7 @@ export class ImageOptimizationStack extends Stack {
     // });
 
     // Attach the S3 bucket policy to the bucket
-    transformedImageBucket.addToResourcePolicy(policy);
+    //transformedImageBucket.addToResourcePolicy(policy);
 
 
     // statements of the IAM policy to attach to Lambda
