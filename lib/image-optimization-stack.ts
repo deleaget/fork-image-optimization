@@ -133,14 +133,24 @@ export class ImageOptimizationStack extends Stack {
           expiration: Duration.days(parseInt(S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION)),
         },
       ],
+      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
+      accessControl: s3.BucketAccessControl.PUBLIC_READ,
       blockPublicAccess: {
-        blockPublicAcls: true,
-        blockPublicPolicy: true,
+        blockPublicAcls: false,
+        blockPublicPolicy: false,
         ignorePublicAcls: false,
         restrictPublicBuckets: false,
       },
-      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
-      accessControl: s3.BucketAccessControl.PUBLIC_READ,
+      publicReadAccess: true,
+      cors: [
+        {
+          allowedOrigins: ['*'],
+          allowedMethods: [s3.HttpMethods.GET],
+          allowedHeaders: ['*'],
+          exposedHeaders: [],
+          maxAge: 3000
+        }
+      ],
     });
 
     // prepare env variable for Lambda 
