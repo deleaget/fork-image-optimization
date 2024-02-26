@@ -97,6 +97,7 @@ export const handler = async (event) => {
                 Metadata: {
                     'cache-control': TRANSFORMED_IMAGE_CACHE_TTL,
                 },
+                Acl: 'public-read'
             })
             await s3Client.send(putImageCommand);
             timingLog = timingLog + ',img-upload;dur=' + parseInt(performance.now() - startTime);

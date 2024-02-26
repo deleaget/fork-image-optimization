@@ -137,9 +137,21 @@ export class ImageOptimizationStack extends Stack {
         blockPublicAcls: true,
         blockPublicPolicy: false,
         ignorePublicAcls: true,
-        restrictPublicBuckets: false,
+        restrictPublicBuckets: true,
       },
-      objectOwnership: s3.ObjectOwnership.BUCKET_OWNER_ENFORCED
+      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
+      cors: [
+        {
+          allowedMethods: [
+            s3.HttpMethods.GET,
+          ],
+          allowedOrigins: ['*'],
+          allowedHeaders: ['Authorization'],
+          exposedHeaders: [],
+          maxAge: 3000,
+        },
+      ],
+      publicReadAccess: true,
     });
 
     // prepare env variable for Lambda 
@@ -168,9 +180,11 @@ export class ImageOptimizationStack extends Stack {
     transformedImageBucket.addToResourcePolicy(
       new iam.PolicyStatement({
         actions: ['s3:GetObject'],
+        effect: iam.Effect.ALLOW,
         resources: [transformedImageBucket.arnForObjects('*')],
       })
     )
+
 
     // statements of the IAM policy to attach to Lambda
     var iamPolicyStatements = [s3ReadOriginalImagesPolicy];
