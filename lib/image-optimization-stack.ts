@@ -136,10 +136,10 @@ export class ImageOptimizationStack extends Stack {
       objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
       accessControl: s3.BucketAccessControl.PUBLIC_READ,
       blockPublicAccess: {
-        blockPublicAcls: false,
-        blockPublicPolicy: false,
-        ignorePublicAcls: false,
-        restrictPublicBuckets: false,
+        blockPublicAcls: true,
+        blockPublicPolicy: true,
+        ignorePublicAcls: true,
+        restrictPublicBuckets: true,
       },
       publicReadAccess: true,
       cors: [
@@ -168,14 +168,14 @@ export class ImageOptimizationStack extends Stack {
       resources: [originalImageBucket.arnForObjects('*')],
     });
     // IAM policy to read from the S3 bucket containing the transformed images
-    // transformedImageBucket.addToResourcePolicy(
-    //   new iam.PolicyStatement({
-    //     actions: ['s3:GetObject'],
-    //     effect: iam.Effect.ALLOW,
-    //     principals: [new iam.StarPrincipal()],
-    //     resources: [transformedImageBucket.arnForObjects('*')],
-    //   })
-    // )
+    transformedImageBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:GetObject'],
+        effect: iam.Effect.ALLOW,
+        principals: [new iam.StarPrincipal()],
+        resources: [transformedImageBucket.arnForObjects('*')],
+      })
+    )
 
 
     // statements of the IAM policy to attach to Lambda
