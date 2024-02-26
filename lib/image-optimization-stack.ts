@@ -165,6 +165,12 @@ export class ImageOptimizationStack extends Stack {
     //     resources: [transformedImageBucket.arnForObjects('*')],
     //   })
     // )
+    transformedImageBucket.addToResourcePolicy(
+      new iam.PolicyStatement({
+        actions: ['s3:GetObject'],
+        resources: [transformedImageBucket.arnForObjects('*')],
+      })
+    )
 
     // statements of the IAM policy to attach to Lambda
     var iamPolicyStatements = [s3ReadOriginalImagesPolicy];
