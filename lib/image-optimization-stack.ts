@@ -240,7 +240,7 @@ export class ImageOptimizationStack extends Stack {
 
       // write policy for Lambda on the s3 bucket for transformed images
       var s3WriteTransformedImagesPolicy = new iam.PolicyStatement({
-        actions: ['s3:PutObject'],
+        actions: ['s3:PutObjectAcl'],
         resources: ['arn:aws:s3:::' + transformedImageBucket.bucketName + '/*'],
       });
       iamPolicyStatements.push(s3WriteTransformedImagesPolicy);
