@@ -1,7 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
-import { GetObjectCommand, PutObjectCommand, S3Client, ObjectCannedACL } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, PutObjectAclCommand, S3Client, ObjectCannedACL } from "@aws-sdk/client-s3";
 import Sharp from 'sharp';
 
 const s3Client = new S3Client();
