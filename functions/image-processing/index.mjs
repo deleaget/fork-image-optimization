@@ -13,9 +13,9 @@ const MAX_IMAGE_SIZE = parseInt(process.env.maxImageSize);
 
 export const handler = async (event) => {
     // First validate if the request is coming from CloudFront
-    if (!event.headers['x-origin-secret-header'] || !(event.headers['x-origin-secret-header'] === SECRET_KEY)) return sendError(403, 'Request unauthorized');
+    if (!event.headers['x-origin-secret-header'] || !(event.headers['x-origin-secret-header'] === SECRET_KEY)) return sendError(403, 'Request unauthorized', null);
     // Validate if this is a GET request
-    if (!event.requestContext || !event.requestContext.http || !(event.requestContext.http.method === 'GET')) return sendError(400, 'Bad Request');
+    if (!event.requestContext || !event.requestContext.http || !(event.requestContext.http.method === 'GET')) return sendError(400, 'Bad Request', null);
     // An example of expected path is /images/rio/1.jpeg/format=auto,width=100 or /images/rio/1.jpeg/original where /images/rio/1.jpeg is the path of the original image
     var imagePathArray = event.requestContext.http.path.split('/');
     // get the requested image operations
@@ -26,10 +26,12 @@ export const handler = async (event) => {
     // initialize default response object (original image)
     var response = { bucket: S3_ORIGINAL_IMAGE_BUCKET, key: originalImagePath };
 
+    var timingLog = '';
     var startTime = performance.now();
     // Downloading original image
     let originalImageBody;
     let contentType;
+
     try {
         const getOriginalImageCommand = new GetObjectCommand({ Bucket: S3_ORIGINAL_IMAGE_BUCKET, Key: originalImagePath });
         const getOriginalImageCommandOutput = await s3Client.send(getOriginalImageCommand);
@@ -40,9 +42,10 @@ export const handler = async (event) => {
     } catch (error) {
         var error_message = 'Unexpected error during original image downloading';
         response['error'] = error_message;
+        timingLog = 'img-download;dur=' + parseInt(performance.now() - startTime);
         
         logError(error_message, error);
-        return sendError(500, response);
+        return sendError(500, response, timingLog);
     }
     let transformedImage = Sharp(await originalImageBody, { failOn: 'none', animated: true });
     // Get image orientation to rotate if needed
@@ -50,7 +53,7 @@ export const handler = async (event) => {
     // execute the requested operations 
     const operationsJSON = Object.fromEntries(operationsPrefix.split(',').map(operation => operation.split('=')));
     // variable holding the server timing header value
-    var timingLog = 'img-download;dur=' + parseInt(performance.now() - startTime);
+    timingLog = 'img-download;dur=' + parseInt(performance.now() - startTime);
     startTime = performance.now();
 
     try {
@@ -79,14 +82,15 @@ export const handler = async (event) => {
             } else transformedImage = transformedImage.toFormat(operationsJSON['format']);
         }
         transformedImage = await transformedImage.toBuffer();
+        timingLog = timingLog + ',img-transform;dur=' + parseInt(performance.now() - startTime);
     } catch (error) {
         var error_message = 'Unexpected error during image transformation';
         response['error'] = error_message;
+        timingLog = timingLog + ',img-transform;dur=' + parseInt(performance.now() - startTime);
         
         logError(error_message, error);
-        return sendError(500, response);
+        return sendError(500, response, timingLog);
     }
-    timingLog = timingLog + ',img-transform;dur=' + parseInt(performance.now() - startTime);
 
     // handle gracefully generated images bigger than a specified limit (e.g. Lambda output object limit)
     var transformedImageByteLength = Buffer.byteLength(transformedImage);
@@ -113,9 +117,10 @@ export const handler = async (event) => {
         } catch (error) {
             var error_message = 'Could not upload transformed image to S3 : ' + S3_TRANSFORMED_IMAGE_BUCKET + '/' + key;
             response['error'] = error_message;
+            timingLog = timingLog + ',img-upload;dur=' + parseInt(performance.now() - startTime);
             
             logError(error_message, error);
-            sendError(500, response);
+            sendError(500, response, timingLog);
         }
     }
 
@@ -125,7 +130,7 @@ export const handler = async (event) => {
         response['error'] = error_message;
 
         logError(error_message, error_message);
-        sendError(413, response);
+        sendError(413, response, timingLog);
     } else return {
         statusCode: 200,
         body: response,
@@ -136,7 +141,7 @@ export const handler = async (event) => {
     };
 };
 
-function sendError(statusCode, body) {
+function sendError(statusCode, body, timingLog) {
     var json_body = {};
     if (typeof body === 'object') json_body = body;
     else json_body = { error: body };
