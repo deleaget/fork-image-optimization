@@ -120,7 +120,7 @@ export const handler = async (event) => {
             timingLog = timingLog + ',img-upload;dur=' + parseInt(performance.now() - startTime);
             
             logError(error_message, error);
-            sendError(500, response, timingLog);
+            return sendError(500, response, timingLog);
         }
     }
 
@@ -130,7 +130,7 @@ export const handler = async (event) => {
         response['error'] = error_message;
 
         logError(error_message, error_message);
-        sendError(413, response, timingLog);
+        return sendError(413, response, timingLog);
     } else return {
         statusCode: 200,
         body: response,
