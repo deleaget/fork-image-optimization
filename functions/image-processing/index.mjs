@@ -13,9 +13,9 @@ const MAX_IMAGE_SIZE = parseInt(process.env.maxImageSize);
 
 export const handler = async (event) => {
     // First validate if the request is coming from CloudFront
-    if (!event.headers['x-origin-secret-header'] || !(event.headers['x-origin-secret-header'] === SECRET_KEY)) return sendError(403, 'Request unauthorized', event);
+    if (!event.headers['x-origin-secret-header'] || !(event.headers['x-origin-secret-header'] === SECRET_KEY)) return sendError(403, 'Request unauthorized');
     // Validate if this is a GET request
-    if (!event.requestContext || !event.requestContext.http || !(event.requestContext.http.method === 'GET')) return sendError(400, 'Only GET method is supported', event);
+    if (!event.requestContext || !event.requestContext.http || !(event.requestContext.http.method === 'GET')) return sendError(400, 'Bad Request');
     // An example of expected path is /images/rio/1.jpeg/format=auto,width=100 or /images/rio/1.jpeg/original where /images/rio/1.jpeg is the path of the original image
     var imagePathArray = event.requestContext.http.path.split('/');
     // get the requested image operations
@@ -23,9 +23,8 @@ export const handler = async (event) => {
     // get the original image path images/rio/1.jpg
     imagePathArray.shift();
     var originalImagePath = imagePathArray.join('/');
-
-    var response = {bucket: S3_ORIGINAL_IMAGE_BUCKET, key: ''};
-
+    // initialize default response object (original image)
+    var response = { bucket: S3_ORIGINAL_IMAGE_BUCKET, key: originalImagePath };
 
     var startTime = performance.now();
     // Downloading original image
@@ -38,9 +37,12 @@ export const handler = async (event) => {
 
         originalImageBody = getOriginalImageCommandOutput.Body.transformToByteArray();
         contentType = getOriginalImageCommandOutput.ContentType;
-        response['key'] = originalImagePath
     } catch (error) {
-        return sendError(500, 'Error downloading original image', error);
+        var error_message = 'Unexpected error during original image downloading';
+        response['error'] = error_message;
+        
+        logError(error_message, error);
+        return sendError(500, response);
     }
     let transformedImage = Sharp(await originalImageBody, { failOn: 'none', animated: true });
     // Get image orientation to rotate if needed
@@ -50,6 +52,7 @@ export const handler = async (event) => {
     // variable holding the server timing header value
     var timingLog = 'img-download;dur=' + parseInt(performance.now() - startTime);
     startTime = performance.now();
+
     try {
         // check if resizing is requested
         var resizingOptions = {};
@@ -77,12 +80,17 @@ export const handler = async (event) => {
         }
         transformedImage = await transformedImage.toBuffer();
     } catch (error) {
-        return sendError(500, 'error transforming image', error);
+        var error_message = 'Unexpected error during image transformation';
+        response['error'] = error_message;
+        
+        logError(error_message, error);
+        return sendError(500, response);
     }
     timingLog = timingLog + ',img-transform;dur=' + parseInt(performance.now() - startTime);
 
     // handle gracefully generated images bigger than a specified limit (e.g. Lambda output object limit)
-    const imageTooBig = Buffer.byteLength(transformedImage) > MAX_IMAGE_SIZE;
+    var transformedImageByteLength = Buffer.byteLength(transformedImage);
+    const imageTooBig = transformedImageByteLength > MAX_IMAGE_SIZE;
 
     // upload transformed image back to S3 if required in the architecture
     if (S3_TRANSFORMED_IMAGE_BUCKET && !imageTooBig) {
@@ -101,41 +109,46 @@ export const handler = async (event) => {
             })
             await s3Client.send(putImageCommand);
             timingLog = timingLog + ',img-upload;dur=' + parseInt(performance.now() - startTime);
-            response = {bucket: S3_TRANSFORMED_IMAGE_BUCKET, key: key}
-            // If the generated image file is too big, send a redirection to the generated image on S3, instead of serving it synchronously from Lambda. 
-            // if (imageTooBig) {
-            //     return {
-            //         statusCode: 302,
-            //         headers: {
-            //             'Location': '/' + originalImagePath + '?' + operationsPrefix.replace(/,/g, "&"),
-            //             'Cache-Control': 'private,no-store',
-            //             'Server-Timing': timingLog
-            //         }
-            //     };
-            // }
+            response = { bucket: S3_TRANSFORMED_IMAGE_BUCKET, key: key }
         } catch (error) {
-            logError('Could not upload transformed image to S3', error);
+            var error_message = 'Could not upload transformed image to S3 : ' + S3_TRANSFORMED_IMAGE_BUCKET + '/' + key;
+            response['error'] = error_message;
+            
+            logError(error_message, error);
+            sendError(500, response);
         }
     }
 
-    // Return error if the image is too big and a redirection to the generated image was not possible, else return transformed image
+    // Return a 413 Content Too Large error if the transformed image is too big with the original image as response, else return transformed image
     if (imageTooBig) {
-        return sendError(403, 'Requested transformed image is too big', '');
+        var error_message = 'Requested transformed image is too big. (max: ' + MAX_IMAGE_SIZE + ' bytes, actual: ' + transformedImageByteLength + ' bytes)';
+        response['error'] = error_message;
+
+        logError(error_message, error);
+        sendError(413, response);
     } else return {
         statusCode: 200,
         body: response,
-        //isBase64Encoded: true,
         headers: {
             'Content-Type': 'application/json',
-            // 'Cache-Control': TRANSFORMED_IMAGE_CACHE_TTL,
             'Server-Timing': timingLog
         }
     };
 };
 
-function sendError(statusCode, body, error) {
-    logError(body, error);
-    return { statusCode, body };
+function sendError(statusCode, body) {
+    var json_body = {};
+    if (typeof body === 'object') json_body = body;
+    else json_body = { error: body };
+
+    return { 
+        statusCode: statusCode, 
+        body: json_body,
+        headers: {
+            'Content-Type': 'application/json',
+            'Server-Timing': timingLog
+        } 
+    };
 }
 
 function logError(body, error) {
