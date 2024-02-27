@@ -124,7 +124,7 @@ export const handler = async (event) => {
         var error_message = 'Requested transformed image is too big. (max: ' + MAX_IMAGE_SIZE + ' bytes, actual: ' + transformedImageByteLength + ' bytes)';
         response['error'] = error_message;
 
-        logError(error_message, error);
+        logError(error_message, error_message);
         sendError(413, response);
     } else return {
         statusCode: 200,
@@ -151,7 +151,7 @@ function sendError(statusCode, body) {
     };
 }
 
-function logError(body, error) {
-    console.log('APPLICATION ERROR', body);
+function logError(error_message, error) {
+    console.log('APPLICATION ERROR', error_message);
     console.log(error);
 }
