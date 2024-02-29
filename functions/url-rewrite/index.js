@@ -9,6 +9,9 @@ function handler(event) {
     if (request.querystring) {
         Object.keys(request.querystring).forEach(operation => {
             switch (operation.toLowerCase()) {
+                case 'ratio':
+                    var ratio = request.querystring[operation]['value'].toLowerCase();
+                    normalizedOperations['ratio'] = ratio;
                 case 'format': 
                     var SUPPORTED_FORMATS = ['auto', 'jpeg', 'webp', 'avif', 'png', 'svg', 'gif'];
                     if (request.querystring[operation]['value'] && SUPPORTED_FORMATS.includes(request.querystring[operation]['value'].toLowerCase())) {
@@ -60,6 +63,7 @@ function handler(event) {
         if (Object.keys(normalizedOperations).length > 0) {
             // put them in order
             var normalizedOperationsArray = [];
+            if (normalizedOperations.ratio) normalizedOperationsArray.push('ratio='+normalizedOperations.ratio);
             if (normalizedOperations.format) normalizedOperationsArray.push('format='+normalizedOperations.format);
             if (normalizedOperations.quality) normalizedOperationsArray.push('quality='+normalizedOperations.quality);
             if (normalizedOperations.width) normalizedOperationsArray.push('width='+normalizedOperations.width);

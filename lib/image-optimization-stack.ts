@@ -13,6 +13,7 @@ var STORE_TRANSFORMED_IMAGES = 'true';
 // Parameters of S3 bucket where original images are stored
 var S3_IMAGE_BUCKET_NAME: string;
 var S3_TRANSFORMED_IMAGE_BUCKET_NAME: string;
+var S3_REUSED_TRANSFORMED_IMAGE_BUCKET_NAME: string;
 // CloudFront parameters
 var CLOUDFRONT_ORIGIN_SHIELD_REGION = getOriginShieldRegion(process.env.AWS_REGION || process.env.CDK_DEFAULT_REGION || 'us-east-1');
 var CLOUDFRONT_CORS_ENABLED = 'true';
@@ -55,6 +56,7 @@ export class ImageOptimizationStack extends Stack {
     S3_TRANSFORMED_IMAGE_CACHE_TTL = this.node.tryGetContext('S3_TRANSFORMED_IMAGE_CACHE_TTL') || S3_TRANSFORMED_IMAGE_CACHE_TTL;
     S3_IMAGE_BUCKET_NAME = this.node.tryGetContext('S3_IMAGE_BUCKET_NAME') || S3_IMAGE_BUCKET_NAME;
     S3_TRANSFORMED_IMAGE_BUCKET_NAME = this.node.tryGetContext('S3_TRANSFORMED_IMAGE_BUCKET_NAME') || 'imgtransformationstack-s3transformedimagebucket';
+    S3_REUSED_TRANSFORMED_IMAGE_BUCKET_NAME = this.node.tryGetContext('S3_TRANSFORMED_IMAGE_BUCKET_NAME') || S3_REUSED_TRANSFORMED_IMAGE_BUCKET_NAME;
     CLOUDFRONT_ORIGIN_SHIELD_REGION = this.node.tryGetContext('CLOUDFRONT_ORIGIN_SHIELD_REGION') || CLOUDFRONT_ORIGIN_SHIELD_REGION;
     CLOUDFRONT_CORS_ENABLED = this.node.tryGetContext('CLOUDFRONT_CORS_ENABLED') || CLOUDFRONT_CORS_ENABLED;
     LAMBDA_MEMORY = this.node.tryGetContext('LAMBDA_MEMORY') || LAMBDA_MEMORY;
@@ -123,25 +125,39 @@ export class ImageOptimizationStack extends Stack {
       });
     }
 
-    // create bucket for transformed images if enabled in the architecture
-    transformedImageBucket = new s3.Bucket(this, 's3-transformed-image-bucket', {
-      bucketName: S3_TRANSFORMED_IMAGE_BUCKET_NAME,
-      removalPolicy: RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
-      lifecycleRules: [
-        {
-          expiration: Duration.days(parseInt(S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION)),
+    if (S3_TRANSFORMED_IMAGE_BUCKET_NAME) {
+      // create bucket for transformed images if enabled in the architecture
+      transformedImageBucket = new s3.Bucket(this, 's3-transformed-image-bucket', {
+        bucketName: S3_TRANSFORMED_IMAGE_BUCKET_NAME,
+        removalPolicy: RemovalPolicy.DESTROY,
+        autoDeleteObjects: true,
+        lifecycleRules: [
+          {
+            expiration: Duration.days(parseInt(S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION)),
+          },
+        ],
+        blockPublicAccess: {
+          blockPublicAcls: false,
+          blockPublicPolicy: false,
+          ignorePublicAcls: false,
+          restrictPublicBuckets: false,
         },
-      ],
-      blockPublicAccess: {
-        blockPublicAcls: false,
-        blockPublicPolicy: false,
-        ignorePublicAcls: false,
-        restrictPublicBuckets: false,
-      },
-      accessControl: s3.BucketAccessControl.PRIVATE,
-      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER
-    });
+        accessControl: s3.BucketAccessControl.PRIVATE,
+        objectOwnership: s3.ObjectOwnership.OBJECT_WRITER
+      });
+
+      // IAM policy to read from the S3 bucket containing the transformed images
+      transformedImageBucket.addToResourcePolicy(
+        new iam.PolicyStatement({
+          actions: ['s3:GetObject'],
+          effect: iam.Effect.ALLOW,
+          principals: [new iam.StarPrincipal()],
+          resources: [transformedImageBucket.arnForObjects('*')],
+        })
+      )
+    } else if (S3_REUSED_TRANSFORMED_IMAGE_BUCKET_NAME) {
+      transformedImageBucket = s3.Bucket.fromBucketName(this, 's3-transformed-image-bucket', S3_REUSED_TRANSFORMED_IMAGE_BUCKET_NAME);
+    }
 
     // prepare env variable for Lambda 
     var lambdaEnv: LambdaEnv = {
@@ -157,16 +173,6 @@ export class ImageOptimizationStack extends Stack {
       actions: ['s3:GetObject'],
       resources: [originalImageBucket.arnForObjects('*')],
     });
-    // IAM policy to read from the S3 bucket containing the transformed images
-    transformedImageBucket.addToResourcePolicy(
-      new iam.PolicyStatement({
-        actions: ['s3:GetObject'],
-        effect: iam.Effect.ALLOW,
-        principals: [new iam.StarPrincipal()],
-        resources: [transformedImageBucket.arnForObjects('*')],
-      })
-    )
-
 
     // statements of the IAM policy to attach to Lambda
     var iamPolicyStatements = [s3ReadOriginalImagesPolicy];
@@ -281,7 +287,7 @@ export class ImageOptimizationStack extends Stack {
       imageDeliveryCacheBehaviorConfig.responseHeadersPolicy = imageResponseHeadersPolicy;
     }
     const imageDelivery = new cloudfront.Distribution(this, 'imageDeliveryDistribution', {
-      comment: 'image optimization - image delivery',
+      comment: 'Okast image optimization - image delivery with url rewrite.',
       defaultBehavior: imageDeliveryCacheBehaviorConfig
     });
 
