@@ -9,6 +9,9 @@ function handler(event) {
     if (request.querystring) {
         Object.keys(request.querystring).forEach(operation => {
             switch (operation.toLowerCase()) {
+                case 'bucket':
+                    var bucket = request.querystring[operation]['value'];
+                    normalizedOperations['bucket'] = bucket;
                 case 'ratio':
                     var ratio = request.querystring[operation]['value'].toLowerCase();
                     normalizedOperations['ratio'] = ratio;

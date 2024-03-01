@@ -39,7 +39,7 @@ type ImageDeliveryCacheBehaviorConfig = {
 };
 
 type LambdaEnv = {
-  originalImageBucketName: string,
+  originalImageBucketName?: string,
   transformedImageBucketName?: any;
   transformedImageCacheTTL: string,
   secretKey: string,
@@ -100,7 +100,12 @@ export class ImageOptimizationStack extends Stack {
     var originalImageBucket;
     var transformedImageBucket;
     
-    if (S3_IMAGE_BUCKET_NAME) {
+    if (S3_IMAGE_BUCKET_NAME == '*') {
+      new CfnOutput(this, 'OriginalImagesS3Bucket', {
+        description: 'S3 buckets where original images are stored',
+        value: '*'
+      });
+    } else if (S3_IMAGE_BUCKET_NAME) {
       originalImageBucket = s3.Bucket.fromBucketName(this, 'imported-original-image-bucket', S3_IMAGE_BUCKET_NAME);
       new CfnOutput(this, 'OriginalImagesS3Bucket', {
         description: 'S3 bucket where original images are stored',
@@ -161,18 +166,27 @@ export class ImageOptimizationStack extends Stack {
 
     // prepare env variable for Lambda 
     var lambdaEnv: LambdaEnv = {
-      originalImageBucketName: originalImageBucket.bucketName,
       transformedImageCacheTTL: S3_TRANSFORMED_IMAGE_CACHE_TTL,
       secretKey: SECRET_KEY,
       maxImageSize: MAX_IMAGE_SIZE,
     };
+    if (originalImageBucket) lambdaEnv.originalImageBucketName = originalImageBucket.bucketName;
     if (transformedImageBucket) lambdaEnv.transformedImageBucketName = transformedImageBucket.bucketName;
 
     // IAM policy to read from the S3 bucket containing the original images
-    const s3ReadOriginalImagesPolicy = new iam.PolicyStatement({
-      actions: ['s3:GetObject'],
-      resources: [originalImageBucket.arnForObjects('*')],
-    });
+    var s3ReadOriginalImagesPolicy;
+
+    if (originalImageBucket) {
+      s3ReadOriginalImagesPolicy = new iam.PolicyStatement({
+        actions: ['s3:GetObject'],
+        resources: [originalImageBucket.arnForObjects('*')],
+      });
+    } else {
+      s3ReadOriginalImagesPolicy = new iam.PolicyStatement({
+        actions: ['s3:GetObject'],
+        resources: ['arn:aws:s3:::*'],
+      });
+    }
 
     // statements of the IAM policy to attach to Lambda
     var iamPolicyStatements = [s3ReadOriginalImagesPolicy];
@@ -186,7 +200,7 @@ export class ImageOptimizationStack extends Stack {
       timeout: Duration.seconds(parseInt(LAMBDA_TIMEOUT)),
       memorySize: parseInt(LAMBDA_MEMORY),
       environment: lambdaEnv,
-      logRetention: logs.RetentionDays.ONE_DAY,
+      logRetention: logs.RetentionDays.THREE_DAYS,
     };
     var imageProcessing = new lambda.Function(this, 'image-optimization', lambdaProps);
 

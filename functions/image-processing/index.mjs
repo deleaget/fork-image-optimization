@@ -1,7 +1,7 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: MIT-0
 
-import { GetObjectCommand, PutObjectCommand, PutObjectAclCommand, S3Client, ObjectCannedACL } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client, ObjectCannedACL } from "@aws-sdk/client-s3";
 import Sharp from 'sharp';
 
 const s3Client = new S3Client();
@@ -23,8 +23,12 @@ export const handler = async (event) => {
     // get the original image path images/rio/1.jpg
     imagePathArray.shift();
     var originalImagePath = imagePathArray.join('/');
+    // execute the requested operations 
+    const operationsJSON = Object.fromEntries(operationsPrefix.split(',').map(operation => operation.split('=')));
+    // get the original image bucket
+    var original_bucket = S3_ORIGINAL_IMAGE_BUCKET || operationsJSON['bucket']
     // initialize default response object (original image)
-    var response = { bucket: S3_ORIGINAL_IMAGE_BUCKET, key: originalImagePath };
+    var response = { bucket: original_bucket, key: originalImagePath };
 
     var timingLog = '';
     var startTime = performance.now();
@@ -33,7 +37,7 @@ export const handler = async (event) => {
     let contentType;
 
     try {
-        const getOriginalImageCommand = new GetObjectCommand({ Bucket: S3_ORIGINAL_IMAGE_BUCKET, Key: originalImagePath });
+        const getOriginalImageCommand = new GetObjectCommand({ Bucket: original_bucket, Key: originalImagePath });
         const getOriginalImageCommandOutput = await s3Client.send(getOriginalImageCommand);
         console.log(`Got response from S3 for ${originalImagePath}`);
 
@@ -50,8 +54,6 @@ export const handler = async (event) => {
     let transformedImage = Sharp(await originalImageBody, { failOn: 'none', animated: true });
     // Get image orientation to rotate if needed
     const imageMetadata = await transformedImage.metadata();
-    // execute the requested operations 
-    const operationsJSON = Object.fromEntries(operationsPrefix.split(',').map(operation => operation.split('=')));
     // variable holding the server timing header value
     timingLog = 'img-download;dur=' + parseInt(performance.now() - startTime);
     startTime = performance.now();
