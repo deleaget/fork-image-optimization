@@ -109,13 +109,13 @@ export const handler = async (event) => {
     // upload transformed image back to S3 if required in the architecture
     if (transformedBucket && !imageTooBig) {
         startTime = performance.now();
+        var picturePath = operationsPrefix.slice();
+        var toBucketRegion = transformedBucketRegion;
+        delete picturePath["fromBucket"];
+        delete picturePath["toBucket"];
+        delete picturePath["toBucketRegion"];
+        var key = originalImagePath + '/transformed/' + picturePath
         try {
-            var picturePath = operationsPrefix.slice();
-            var toBucketRegion = picturePath["toBucketRegion"];
-            delete picturePath["fromBucket"];
-            delete picturePath["toBucket"];
-            delete picturePath["toBucketRegion"];
-            var key = originalImagePath + '/transformed/' + picturePath
             const putImageCommand = new PutObjectCommand({
                 Body: transformedImage,
                 Bucket: transformedBucket,
@@ -134,7 +134,7 @@ export const handler = async (event) => {
             timingLog = timingLog + ',img-upload;dur=' + parseInt(performance.now() - startTime);
             response = { bucket: transformedBucket, key: key, transformed: true }
         } catch (error) {
-            var error_message = 'Could not upload transformed image to S3 : ' + transformedBucket + '/' + key;
+            var error_message = 'Could not upload transformed image in S3 bucket : ' + transformedBucket + ', region : ' + (transformedBucketRegion == null ? "default" : transformedBucketRegion.toString()) + ', key :' + key;
             response['error'] = error_message;
             timingLog = timingLog + ',img-upload;dur=' + parseInt(performance.now() - startTime);
             
