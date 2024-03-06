@@ -75,7 +75,7 @@ export class ImageOptimizationStack extends Stack {
     // statements of the IAM policy to attach to Lambda
     var iamPolicyStatements = Array<iam.PolicyStatement>();
 
-    S3_IMAGE_BUCKETS_NAMES.forEach(originalBucketName => {
+    S3_IMAGE_BUCKETS_NAMES?.forEach(originalBucketName => {
       iamPolicyStatements.push(
         new iam.PolicyStatement({
           actions: ['s3:GetObject'],
@@ -105,7 +105,7 @@ export class ImageOptimizationStack extends Stack {
     var imageProcessing = new lambda.Function(this, 'image-optimization', lambdaProps);
 
     // write policy for Lambda on the s3 bucket for transformed images
-    S3_TRANSFORMED_IMAGE_BUCKETS_NAMES.forEach(transformedBucketName => {
+    S3_TRANSFORMED_IMAGE_BUCKETS_NAMES?.forEach(transformedBucketName => {
       iamPolicyStatements.push(
         new iam.PolicyStatement({
           actions: ['s3:PutObject'],
