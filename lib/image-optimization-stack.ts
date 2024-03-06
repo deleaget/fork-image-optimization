@@ -48,8 +48,8 @@ export class ImageOptimizationStack extends Stack {
     STORE_TRANSFORMED_IMAGES = this.node.tryGetContext('STORE_TRANSFORMED_IMAGES') || STORE_TRANSFORMED_IMAGES;
     S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION = this.node.tryGetContext('S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION') || S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION;
     S3_TRANSFORMED_IMAGE_CACHE_TTL = this.node.tryGetContext('S3_TRANSFORMED_IMAGE_CACHE_TTL') || S3_TRANSFORMED_IMAGE_CACHE_TTL;
-    S3_IMAGE_BUCKETS_NAMES = this.node.tryGetContext('S3_IMAGE_BUCKETS_NAMES')?.valueAsList;
-    S3_TRANSFORMED_IMAGE_BUCKETS_NAMES = this.node.tryGetContext('S3_TRANSFORMED_IMAGE_BUCKETS_NAMES')?.valueAsList;
+    S3_IMAGE_BUCKETS_NAMES = this.node.tryGetContext('S3_IMAGE_BUCKETS_NAMES')?.valueAsList || S3_IMAGE_BUCKETS_NAMES;
+    S3_TRANSFORMED_IMAGE_BUCKETS_NAMES = this.node.tryGetContext('S3_TRANSFORMED_IMAGE_BUCKETS_NAMES')?.valueAsList || S3_TRANSFORMED_IMAGE_BUCKETS_NAMES;
     CLOUDFRONT_CORS_ENABLED = this.node.tryGetContext('CLOUDFRONT_CORS_ENABLED') || CLOUDFRONT_CORS_ENABLED;
     LAMBDA_MEMORY = this.node.tryGetContext('LAMBDA_MEMORY') || LAMBDA_MEMORY;
     LAMBDA_TIMEOUT = this.node.tryGetContext('LAMBDA_TIMEOUT') || LAMBDA_TIMEOUT;
@@ -58,15 +58,18 @@ export class ImageOptimizationStack extends Stack {
     // Create secret key to be used between CloudFront and Lambda URL for access control
     const SECRET_KEY = createHash('md5').update(this.node.addr).digest('hex');
 
-    
-    new CfnOutput(this, 'ListOriginalImagesS3BucketsParameter', {
-      description: 'S3 buckets where original images are stored',
-      value: S3_IMAGE_BUCKETS_NAMES?.toString()
-    });
-    new CfnOutput(this, 'ListTransformedImagesS3BucketsParameter', {
-      description: 'S3 buckets where transformed images are saved',
-      value: S3_TRANSFORMED_IMAGE_BUCKETS_NAMES?.toString()
-    });
+    if (S3_IMAGE_BUCKETS_NAMES) {
+      new CfnOutput(this, 'ListOriginalImagesS3BucketsParameter', {
+        description: 'S3 buckets where original images are stored',
+        value: S3_IMAGE_BUCKETS_NAMES?.toString()
+      });
+    }
+    if (S3_TRANSFORMED_IMAGE_BUCKETS_NAMES) {
+      new CfnOutput(this, 'ListTransformedImagesS3BucketsParameter', {
+        description: 'S3 buckets where transformed images are saved',
+        value: S3_TRANSFORMED_IMAGE_BUCKETS_NAMES?.toString()
+      });
+    }
     
     // IAM policy to read from the S3 bucket containing the original images
     // statements of the IAM policy to attach to Lambda
@@ -117,12 +120,14 @@ export class ImageOptimizationStack extends Stack {
       );
     });
 
-    // attach iam policy to the role assumed by Lambda
-    imageProcessing.role?.attachInlinePolicy(
-      new iam.Policy(this, 'read-write-bucket-policy', {
-        statements: iamPolicyStatements,
-      }),
-    );
+    if (iamPolicyStatements.length > 0) {
+      // attach iam policy to the role assumed by Lambda
+      imageProcessing.role?.attachInlinePolicy(
+        new iam.Policy(this, 'read-write-bucket-policy', {
+          statements: iamPolicyStatements,
+        }),
+      );
+    }
 
     // Create a CloudFront Function for url rewrites
     const urlRewriteFunction = new cloudfront.Function(this, 'urlRewrite', {
