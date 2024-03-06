@@ -110,11 +110,12 @@ export const handler = async (event) => {
     if (transformedBucket && !imageTooBig) {
         startTime = performance.now();
         try {
-            var picture_path = operationsPrefix.slice();
-            delete picture_path["fromBucket"];
-            delete picture_path["toBucket"];
-            delete picture_path["toBucketRegion"];
-            var key = originalImagePath + '/transformed/' + picture_path
+            var picturePath = operationsPrefix.slice();
+            var toBucketRegion = picturePath["toBucketRegion"];
+            delete picturePath["fromBucket"];
+            delete picturePath["toBucket"];
+            delete picturePath["toBucketRegion"];
+            var key = originalImagePath + '/transformed/' + picturePath
             const putImageCommand = new PutObjectCommand({
                 Body: transformedImage,
                 Bucket: transformedBucket,
@@ -125,7 +126,10 @@ export const handler = async (event) => {
                 },
                 ACL: ObjectCannedACL.public_read,
             })
-            var regionalS3Client = new S3Client({ region: transformedBucketRegion });
+            var regionalS3Client = s3Client;
+            if (toBucketRegion) {
+                regionalS3Client = new S3Client({ region: toBucketRegion });
+            }
             await regionalS3Client.send(putImageCommand);
             timingLog = timingLog + ',img-upload;dur=' + parseInt(performance.now() - startTime);
             response = { bucket: transformedBucket, key: key, transformed: true }
