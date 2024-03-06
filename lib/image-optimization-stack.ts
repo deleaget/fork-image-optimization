@@ -78,16 +78,18 @@ export class ImageOptimizationStack extends Stack {
     var iamPolicyStatements = Array<iam.PolicyStatement>();
 
     S3_IMAGE_BUCKETS_NAMES?.forEach(originalBucketName => {
+      var resourcesArn = s3.Bucket.fromBucketName(this, `${ENV}-imported-original-image-bucket-${originalBucketName}`, originalBucketName).arnForObjects('*');
+
       iamPolicyStatements.push(
         new iam.PolicyStatement({
           actions: ['s3:GetObject'],
-          resources: [s3.Bucket.fromBucketName(this, `${ENV}-imported-original-image-bucket`, originalBucketName).arnForObjects('*')],
+          resources: [resourcesArn],
         })
       );
 
-      new CfnOutput(this, `${ENV}NewReadLambdaRolePolicyStatement`, {
+      new CfnOutput(this, `${ENV}NewReadLambdaRolePolicyStatement-${originalBucketName}`, {
         description: `${ENV} - A new s3:GetObject policy statement for the Lambda role added`,
-        value: s3.Bucket.fromBucketName(this, `${ENV}-imported-original-image-bucket`, originalBucketName).arnForObjects('*').toString()
+        value: resourcesArn.toString()
       });
     });
 
@@ -113,22 +115,24 @@ export class ImageOptimizationStack extends Stack {
 
     // write policy for Lambda on the s3 bucket for transformed images
     S3_TRANSFORMED_IMAGE_BUCKETS_NAMES?.forEach(transformedBucketName => {
+      var resourcesArn = s3.Bucket.fromBucketName(this, `${ENV}-transformed-image-bucket-${transformedBucketName}`, transformedBucketName).arnForObjects('*');
+
       iamPolicyStatements.push(
         new iam.PolicyStatement({
           actions: ['s3:PutObject'],
-          resources: [s3.Bucket.fromBucketName(this, `${ENV}-transformed-image-bucket`, transformedBucketName).arnForObjects('*')],
+          resources: [resourcesArn],
         })
       );
       iamPolicyStatements.push(
         new iam.PolicyStatement({
           actions: ['s3:PutObjectAcl'],
-          resources: [s3.Bucket.fromBucketName(this, `${ENV}-transformed-image-bucket`, transformedBucketName).arnForObjects('*')],
+          resources: [resourcesArn],
         })
       );
 
-      new CfnOutput(this, `${ENV}NewWriteLambdaRolePolicyStatement`, {
+      new CfnOutput(this, `${ENV}NewWriteLambdaRolePolicyStatement-${transformedBucketName}`, {
         description: `${ENV} - A new s3:PutObject and s3:PutObjectAcl policy statement for the Lambda role added`,
-        value: s3.Bucket.fromBucketName(this, `${ENV}-transformed-image-bucket`, transformedBucketName).arnForObjects('*').toString()
+        value: resourcesArn.toString()
       });
     });
 
