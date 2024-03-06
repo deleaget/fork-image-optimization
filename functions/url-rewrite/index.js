@@ -9,13 +9,17 @@ function handler(event) {
     if (request.querystring) {
         Object.keys(request.querystring).forEach(operation => {
             switch (operation.toLowerCase()) {
-                case 'fromBucket':
+                case 'from_bucket':
                     var fromBucket = request.querystring[operation]['value'];
                     normalizedOperations['fromBucket'] = fromBucket;
                     break;
-                case 'toBucket':
+                case 'to_bucket':
                     var toBucket = request.querystring[operation]['value'];
                     normalizedOperations['toBucket'] = toBucket;
+                    break;
+                case 'to_bucket_region':
+                    var toBucketRegion = request.querystring[operation]['value'];
+                    normalizedOperations['toBucketRegion'] = toBucketRegion;
                     break;
                 case 'ratio':
                     var ratio = request.querystring[operation]['value'].toLowerCase();
@@ -78,6 +82,7 @@ function handler(event) {
             var normalizedOperationsArray = [];
             if (normalizedOperations.fromBucket) normalizedOperationsArray.push('fromBucket='+normalizedOperations.fromBucket);
             if (normalizedOperations.toBucket) normalizedOperationsArray.push('toBucket='+normalizedOperations.toBucket);
+            if (normalizedOperations.toBucketRegion) normalizedOperationsArray.push('toBucketRegion='+normalizedOperations.toBucket);
             if (normalizedOperations.ratio) normalizedOperationsArray.push('ratio='+normalizedOperations.ratio);
             if (normalizedOperations.format) normalizedOperationsArray.push('format='+normalizedOperations.format);
             if (normalizedOperations.quality) normalizedOperationsArray.push('quality='+normalizedOperations.quality);
