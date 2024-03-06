@@ -109,8 +109,7 @@ export const handler = async (event) => {
     // upload transformed image back to S3 if required in the architecture
     if (transformedBucket && !imageTooBig) {
         startTime = performance.now();
-        var picturePath = operationsJSON.slice();
-        var toBucketRegion = transformedBucketRegion;
+        var picturePath = operationsJSON;
         delete picturePath["fromBucket"];
         delete picturePath["toBucket"];
         delete picturePath["toBucketRegion"];
@@ -127,8 +126,8 @@ export const handler = async (event) => {
                 ACL: ObjectCannedACL.public_read,
             })
             var regionalS3Client = s3Client;
-            if (toBucketRegion) {
-                regionalS3Client = new S3Client({ region: toBucketRegion });
+            if (transformedBucketRegion) {
+                regionalS3Client = new S3Client({ region: transformedBucketRegion });
             }
             await regionalS3Client.send(putImageCommand);
             timingLog = timingLog + ',img-upload;dur=' + parseInt(performance.now() - startTime);
