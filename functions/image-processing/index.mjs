@@ -109,7 +109,7 @@ export const handler = async (event) => {
     if (transformed_bucket && !imageTooBig) {
         startTime = performance.now();
         try {
-            var key = originalImagePath + '/' + operationsPrefix
+            var key = originalImagePath + '/transformed/' + operationsPrefix
             const putImageCommand = new PutObjectCommand({
                 Body: transformedImage,
                 Bucket: transformed_bucket,
