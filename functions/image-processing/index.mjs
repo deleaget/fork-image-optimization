@@ -109,12 +109,12 @@ export const handler = async (event) => {
     // upload transformed image back to S3 if required in the architecture
     if (transformedBucket && !imageTooBig) {
         startTime = performance.now();
-        var picturePath = operationsPrefix.slice();
+        var picturePath = operationsJSON.slice();
         var toBucketRegion = transformedBucketRegion;
         delete picturePath["fromBucket"];
         delete picturePath["toBucket"];
         delete picturePath["toBucketRegion"];
-        var key = originalImagePath + '/transformed/' + picturePath
+        var key = originalImagePath + '/' + picturePath
         try {
             const putImageCommand = new PutObjectCommand({
                 Body: transformedImage,
