@@ -61,11 +61,11 @@ export class ImageOptimizationStack extends Stack {
     
     new CfnOutput(this, 'ListOriginalImagesS3BucketsParameter', {
       description: 'S3 buckets where original images are stored',
-      value: S3_IMAGE_BUCKETS_NAMES.toString()
+      value: S3_IMAGE_BUCKETS_NAMES?.toString()
     });
     new CfnOutput(this, 'ListTransformedImagesS3BucketsParameter', {
       description: 'S3 buckets where transformed images are saved',
-      value: S3_TRANSFORMED_IMAGE_BUCKETS_NAMES.toString()
+      value: S3_TRANSFORMED_IMAGE_BUCKETS_NAMES?.toString()
     });
     
     // IAM policy to read from the S3 bucket containing the original images
