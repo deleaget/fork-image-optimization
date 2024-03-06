@@ -9,23 +9,33 @@ function handler(event) {
     if (request.querystring) {
         Object.keys(request.querystring).forEach(operation => {
             switch (operation.toLowerCase()) {
-                case 'bucket':
-                    var bucket = request.querystring[operation]['value'];
-                    normalizedOperations['bucket'] = bucket;
+                case 'fromBucket':
+                    var fromBucket = request.querystring[operation]['value'];
+                    normalizedOperations['fromBucket'] = fromBucket;
+                    break;
+                case 'toBucket':
+                    var toBucket = request.querystring[operation]['value'];
+                    normalizedOperations['toBucket'] = toBucket;
+                    break;
                 case 'ratio':
                     var ratio = request.querystring[operation]['value'].toLowerCase();
                     normalizedOperations['ratio'] = ratio;
+                    break;
                 case 'format': 
                     var SUPPORTED_FORMATS = ['auto', 'jpeg', 'webp', 'avif', 'png', 'svg', 'gif'];
                     if (request.querystring[operation]['value'] && SUPPORTED_FORMATS.includes(request.querystring[operation]['value'].toLowerCase())) {
                         var format = request.querystring[operation]['value'].toLowerCase(); // normalize to lowercase
                         if (format === 'auto') {
-                            format = 'jpeg';
+                            if (originalImagePath.split('.').pop().toLowerCase() === 'png') {
+                                format = 'png';
+                            } else {
+                                format = 'jpeg';
+                            }
                             if (request.headers['accept']) {
-                                if (request.headers['accept'].value.includes("avif")) {
-                                    format = 'avif';
-                                } else if (request.headers['accept'].value.includes("webp")) {
+                                if (request.headers['accept'].value.includes("webp")) { // for now prefere use webp over avif - really faster !
                                     format = 'webp';
+                                } else if (request.headers['accept'].value.includes("avif")) {
+                                    format = 'avif';
                                 } 
                             }
                         }
@@ -66,6 +76,8 @@ function handler(event) {
         if (Object.keys(normalizedOperations).length > 0) {
             // put them in order
             var normalizedOperationsArray = [];
+            if (normalizedOperations.fromBucket) normalizedOperationsArray.push('fromBucket='+normalizedOperations.fromBucket);
+            if (normalizedOperations.toBucket) normalizedOperationsArray.push('toBucket='+normalizedOperations.toBucket);
             if (normalizedOperations.ratio) normalizedOperationsArray.push('ratio='+normalizedOperations.ratio);
             if (normalizedOperations.format) normalizedOperationsArray.push('format='+normalizedOperations.format);
             if (normalizedOperations.quality) normalizedOperationsArray.push('quality='+normalizedOperations.quality);

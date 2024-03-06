@@ -5,8 +5,6 @@ import { GetObjectCommand, PutObjectCommand, S3Client, ObjectCannedACL } from "@
 import Sharp from 'sharp';
 
 const s3Client = new S3Client();
-const S3_ORIGINAL_IMAGE_BUCKET = process.env.originalImageBucketName;
-const S3_TRANSFORMED_IMAGE_BUCKET = process.env.transformedImageBucketName;
 const TRANSFORMED_IMAGE_CACHE_TTL = process.env.transformedImageCacheTTL;
 const SECRET_KEY = process.env.secretKey;
 const MAX_IMAGE_SIZE = parseInt(process.env.maxImageSize);
@@ -26,15 +24,24 @@ export const handler = async (event) => {
     // execute the requested operations 
     const operationsJSON = Object.fromEntries(operationsPrefix.split(',').map(operation => operation.split('=')));
     // get the original image bucket
-    var original_bucket = S3_ORIGINAL_IMAGE_BUCKET || operationsJSON['bucket']
+    var original_bucket = operationsJSON['fromBucket']
+    var transformed_bucket = operationsJSON['toBucket']
     // initialize default response object (original image)
-    var response = { bucket: original_bucket, key: originalImagePath };
+    var response = { bucket: original_bucket, key: originalImagePath, transformed: false };
 
     var timingLog = '';
     var startTime = performance.now();
     // Downloading original image
     let originalImageBody;
     let contentType;
+
+    if (!transformed_bucket) {
+        var error_message = 'Transformed bucket not found !';
+        response['error'] = error_message;
+
+        logError(error_message, null);
+        return sendError(500, response, timingLog);
+    }
 
     try {
         const getOriginalImageCommand = new GetObjectCommand({ Bucket: original_bucket, Key: originalImagePath });
@@ -99,13 +106,13 @@ export const handler = async (event) => {
     const imageTooBig = transformedImageByteLength > MAX_IMAGE_SIZE;
 
     // upload transformed image back to S3 if required in the architecture
-    if (S3_TRANSFORMED_IMAGE_BUCKET && !imageTooBig) {
+    if (transformed_bucket && !imageTooBig) {
         startTime = performance.now();
         try {
             var key = originalImagePath + '/' + operationsPrefix
             const putImageCommand = new PutObjectCommand({
                 Body: transformedImage,
-                Bucket: S3_TRANSFORMED_IMAGE_BUCKET,
+                Bucket: transformed_bucket,
                 Key: key,
                 ContentType: contentType,
                 Metadata: {
@@ -115,9 +122,9 @@ export const handler = async (event) => {
             })
             await s3Client.send(putImageCommand);
             timingLog = timingLog + ',img-upload;dur=' + parseInt(performance.now() - startTime);
-            response = { bucket: S3_TRANSFORMED_IMAGE_BUCKET, key: key }
+            response = { bucket: transformed_bucket, key: key, transformed: true }
         } catch (error) {
-            var error_message = 'Could not upload transformed image to S3 : ' + S3_TRANSFORMED_IMAGE_BUCKET + '/' + key;
+            var error_message = 'Could not upload transformed image to S3 : ' + transformed_bucket + '/' + key;
             response['error'] = error_message;
             timingLog = timingLog + ',img-upload;dur=' + parseInt(performance.now() - startTime);
             
