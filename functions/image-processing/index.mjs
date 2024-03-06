@@ -112,7 +112,7 @@ export const handler = async (event) => {
         var regex_to_clean = /fromBucket.*?,|toBucket.*?,|toBucketRegion.*?,/gi;
         var picturePath = operationsPrefix.slice().replace(regex_to_clean, "");
         var toBucketRegion = transformedBucketRegion;
-        var key = originalImagePath + '/transformed/' + picturePath
+        var key = originalImagePath + '/' + picturePath
         try {
             const putImageCommand = new PutObjectCommand({
                 Body: transformedImage,
