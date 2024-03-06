@@ -7,6 +7,7 @@ import { createHash } from 'crypto';
 
 // Stack Parameters
 
+var ENV = '';
 // related to architecture. If set to false, transformed images are not stored in S3, and all image requests land on Lambda
 var STORE_TRANSFORMED_IMAGES = 'true';
 // Parameters of S3 bucket where original images are stored
@@ -45,6 +46,7 @@ export class ImageOptimizationStack extends Stack {
     super(scope, id, props);
 
     // Change stack parameters based on provided context
+    ENV = this.node.tryGetContext('ENV') || ENV;
     STORE_TRANSFORMED_IMAGES = this.node.tryGetContext('STORE_TRANSFORMED_IMAGES') || STORE_TRANSFORMED_IMAGES;
     S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION = this.node.tryGetContext('S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION') || S3_TRANSFORMED_IMAGE_EXPIRATION_DURATION;
     S3_TRANSFORMED_IMAGE_CACHE_TTL = this.node.tryGetContext('S3_TRANSFORMED_IMAGE_CACHE_TTL') || S3_TRANSFORMED_IMAGE_CACHE_TTL;
@@ -59,14 +61,14 @@ export class ImageOptimizationStack extends Stack {
     const SECRET_KEY = createHash('md5').update(this.node.addr).digest('hex');
 
     if (S3_IMAGE_BUCKETS_NAMES) {
-      new CfnOutput(this, 'ListOriginalImagesS3BucketsParameter', {
-        description: 'S3 buckets where original images are stored',
+      new CfnOutput(this, `${ENV}ListOriginalImagesS3BucketsParameter`, {
+        description: `${ENV} - S3 buckets where original images are stored`,
         value: S3_IMAGE_BUCKETS_NAMES?.toString()
       });
     }
     if (S3_TRANSFORMED_IMAGE_BUCKETS_NAMES) {
-      new CfnOutput(this, 'ListTransformedImagesS3BucketsParameter', {
-        description: 'S3 buckets where transformed images are saved',
+      new CfnOutput(this, `${ENV}ListTransformedImagesS3BucketsParameter`, {
+        description: `${ENV} - S3 buckets where transformed images are saved`,
         value: S3_TRANSFORMED_IMAGE_BUCKETS_NAMES?.toString()
       });
     }
@@ -79,9 +81,14 @@ export class ImageOptimizationStack extends Stack {
       iamPolicyStatements.push(
         new iam.PolicyStatement({
           actions: ['s3:GetObject'],
-          resources: [s3.Bucket.fromBucketName(this, 'imported-original-image-bucket', originalBucketName).arnForObjects('*')],
+          resources: [s3.Bucket.fromBucketName(this, `${ENV}-imported-original-image-bucket`, originalBucketName).arnForObjects('*')],
         })
       );
+
+      new CfnOutput(this, `${ENV}NewReadLambdaRolePolicyStatement`, {
+        description: `${ENV} - A new s3:GetObject policy statement for the Lambda role added`,
+        value: s3.Bucket.fromBucketName(this, `${ENV}-imported-original-image-bucket`, originalBucketName).arnForObjects('*').toString()
+      });
     });
 
     // prepare env variable for Lambda 
@@ -93,7 +100,7 @@ export class ImageOptimizationStack extends Stack {
 
     // Create Lambda for image processing
     var lambdaProps = {
-      functionName: 'ImgTransformationFunction',
+      functionName: `${ENV}ImgTransformationFunction`,
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
       code: lambda.Code.fromAsset('functions/image-processing'),
@@ -102,40 +109,45 @@ export class ImageOptimizationStack extends Stack {
       environment: lambdaEnv,
       logRetention: logs.RetentionDays.THREE_DAYS,
     };
-    var imageProcessing = new lambda.Function(this, 'image-optimization', lambdaProps);
+    var imageProcessing = new lambda.Function(this, `${ENV}-image-optimization`, lambdaProps);
 
     // write policy for Lambda on the s3 bucket for transformed images
     S3_TRANSFORMED_IMAGE_BUCKETS_NAMES?.forEach(transformedBucketName => {
       iamPolicyStatements.push(
         new iam.PolicyStatement({
           actions: ['s3:PutObject'],
-          resources: [s3.Bucket.fromBucketName(this, 'transformed-image-bucket', transformedBucketName).arnForObjects('*')],
+          resources: [s3.Bucket.fromBucketName(this, `${ENV}-transformed-image-bucket`, transformedBucketName).arnForObjects('*')],
         })
       );
       iamPolicyStatements.push(
         new iam.PolicyStatement({
           actions: ['s3:PutObjectAcl'],
-          resources: [s3.Bucket.fromBucketName(this, 'transformed-image-bucket', transformedBucketName).arnForObjects('*')],
+          resources: [s3.Bucket.fromBucketName(this, `${ENV}-transformed-image-bucket`, transformedBucketName).arnForObjects('*')],
         })
       );
+
+      new CfnOutput(this, `${ENV}NewWriteLambdaRolePolicyStatement`, {
+        description: `${ENV} - A new s3:PutObject and s3:PutObjectAcl policy statement for the Lambda role added`,
+        value: s3.Bucket.fromBucketName(this, `${ENV}-transformed-image-bucket`, transformedBucketName).arnForObjects('*').toString()
+      });
     });
 
     if (iamPolicyStatements.length > 0) {
       // attach iam policy to the role assumed by Lambda
       imageProcessing.role?.attachInlinePolicy(
-        new iam.Policy(this, 'read-write-bucket-policy', {
+        new iam.Policy(this, `${ENV}-read-write-bucket-policy`, {
           statements: iamPolicyStatements,
         }),
       );
     }
 
     // Create a CloudFront Function for url rewrites
-    const urlRewriteFunction = new cloudfront.Function(this, 'urlRewrite', {
+    const urlRewriteFunction = new cloudfront.Function(this, `${ENV}UrlRewrite`, {
       code: cloudfront.FunctionCode.fromFile({ filePath: 'functions/url-rewrite/index.js', }),
-      functionName: `urlRewriteFunctionImageOptimization`,
+      functionName: `${ENV}UrlRewriteFunctionImageOptimization`,
     });
 
-    var cloudCachePolicy = new cloudfront.CachePolicy(this, `ImageCachePolicyImageOptimization`, {
+    var cloudCachePolicy = new cloudfront.CachePolicy(this, `${ENV}ImageCachePolicyImageOptimization`, {
       defaultTtl: Duration.hours(24),
       maxTtl: Duration.days(365),
       minTtl: Duration.seconds(0),
@@ -164,13 +176,13 @@ export class ImageOptimizationStack extends Stack {
       }],
     }
 
-    const imageDelivery = new cloudfront.Distribution(this, 'imageDeliveryDistribution', {
-      comment: 'Okast image optimization - image delivery with url rewrite.',
+    const imageDelivery = new cloudfront.Distribution(this, `${ENV}ImageDeliveryDistribution`, {
+      comment: `${ENV} - Okast image optimization - image delivery with url rewrite.`,
       defaultBehavior: defaultImageDeliveryCacheBehaviorConfig
     });
 
-    new CfnOutput(this, 'ImageDeliveryDomain', {
-      description: 'Domain name of image delivery',
+    new CfnOutput(this, `${ENV}ImageDeliveryDomain`, {
+      description: `${ENV} - Domain name of image delivery`,
       value: imageDelivery.distributionDomainName
     });
   }
