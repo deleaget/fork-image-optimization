@@ -113,6 +113,7 @@ export const handler = async (event) => {
             var picture_path = operationsPrefix.slice();
             delete picture_path["fromBucket"];
             delete picture_path["toBucket"];
+            delete picture_path["toBucketRegion"];
             var key = originalImagePath + '/transformed/' + picture_path
             const putImageCommand = new PutObjectCommand({
                 Body: transformedImage,
