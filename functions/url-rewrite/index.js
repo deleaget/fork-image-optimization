@@ -83,15 +83,15 @@ function handler(event) {
             if (normalizedOperations.quality) normalizedOperationsArray.push('quality='+normalizedOperations.quality);
             if (normalizedOperations.width) normalizedOperationsArray.push('width='+normalizedOperations.width);
             if (normalizedOperations.height) normalizedOperationsArray.push('height='+normalizedOperations.height);
-            request.uri = originalImagePath + '/' + normalizedOperationsArray.join(',');     
+            request.uri = originalImagePath + '/optimized/' + normalizedOperationsArray.join(',');     
         } else {
             // If no valid operation is found, flag the request with /original path suffix
-            request.uri = originalImagePath + '/original';     
+            request.uri = originalImagePath + '/optimized/original';     
         }
 
     } else {
         // If no query strings are found, flag the request with /original path suffix
-        request.uri = originalImagePath + '/original'; 
+        request.uri = originalImagePath + '/optimized/original'; 
     }
     // remove query strings
     request['querystring'] = {};
