@@ -152,6 +152,7 @@ export class ImageOptimizationStack extends Stack {
     });
 
     var cloudCachePolicy = new cloudfront.CachePolicy(this, `${ENV}ImageCachePolicyImageOptimization`, {
+      cachePolicyName: `${ENV}ImageCachePolicyImageOptimization`,
       defaultTtl: Duration.hours(24),
       maxTtl: Duration.days(365),
       minTtl: Duration.seconds(0),

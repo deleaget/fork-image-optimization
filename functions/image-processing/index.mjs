@@ -109,8 +109,13 @@ export const handler = async (event) => {
     // upload transformed image back to S3 if required in the architecture
     if (transformedBucket && !imageTooBig) {
         startTime = performance.now();
-        var regex_to_clean = /fromBucket.*?,|toBucket.*?,|toBucketRegion.*?,/gi;
-        var picturePath = operationsPrefix.slice().replace(regex_to_clean, "");
+        
+        // Clean all operations where is only mandatory in order to Lambda function processing
+        var regex_to_clean = /fromBucket=.*?,|toBucket=.*?,|toBucketRegion=.*?,|([^,]*fromBucket=.*)$|([^,]*toBucket=.*)$|([^,]*toBucketRegion=.*)$/gi;
+        // Clean coma at the end of the line
+        var regex_clean_coma = /,$/gi;
+        var picturePath = operationsPrefix.slice().replace(regex_to_clean, "").replace(regex_clean_coma, "");
+
         var toBucketRegion = transformedBucketRegion;
         var key = originalImagePath + '/' + picturePath
         try {

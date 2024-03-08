@@ -88,7 +88,12 @@ function handler(event) {
             if (normalizedOperations.quality) normalizedOperationsArray.push('quality='+normalizedOperations.quality);
             if (normalizedOperations.width) normalizedOperationsArray.push('width='+normalizedOperations.width);
             if (normalizedOperations.height) normalizedOperationsArray.push('height='+normalizedOperations.height);
-            request.uri = originalImagePath + '/' + normalizedOperationsArray.join(',');     
+
+            if (normalizedOperations.ratio || normalizedOperations.format || normalizedOperations.quality || normalizedOperations.width || normalizedOperations.height) {
+                request.uri = originalImagePath + '/' + normalizedOperationsArray.join(',');   
+            } else {
+                request.uri = originalImagePath + '/original,' + normalizedOperationsArray.join(',');     
+            }
         } else {
             // If no valid operation is found, flag the request with /original path suffix
             request.uri = originalImagePath + '/original';     
