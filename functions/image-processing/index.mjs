@@ -15,7 +15,7 @@ export const handler = async (event) => {
     // Validate if this is a GET request
     if (!event.requestContext || !event.requestContext.http || !(event.requestContext.http.method === 'GET')) return sendError(400, 'Bad Request', null);
     // An example of expected path is /images/rio/1.jpeg/format=auto,width=100 or /images/rio/1.jpeg/original where /images/rio/1.jpeg is the path of the original image
-    var imagePathArray = event.requestContext.http.path.split('/');
+    var imagePathArray = path.split('/');
     // get the requested image operations
     var operationsPrefix = imagePathArray.pop();
     // get the original image path images/rio/1.jpg
@@ -111,13 +111,18 @@ export const handler = async (event) => {
         startTime = performance.now();
         
         // Clean all operations where is only mandatory in order to Lambda function processing
-        var regex_to_clean = /fromBucket=.*?,|toBucket=.*?,|toBucketRegion=.*?,|([^,]*fromBucket=.*)$|([^,]*toBucket=.*)$|([^,]*toBucketRegion=.*)$/gi;
+        var regex_to_clean = /fromBucket=.*?,|toBucket=.*?,|toBucketRegion=.*?,|toBucketPath=.*?,|([^,]*fromBucket=.*)$|([^,]*toBucket=.*)$|([^,]*toBucketRegion=.*)$|([^,]*toBucketPath=.*)$/gi;
         // Clean coma at the end of the line
         var regex_clean_coma = /,$/gi;
         var picturePath = operationsPrefix.slice().replace(regex_to_clean, "").replace(regex_clean_coma, "");
 
         var toBucketRegion = transformedBucketRegion;
-        var key = originalImagePath + '/' + picturePath
+        var prefix_key = originalImagePath;
+        if (operationsJSON['toBucketPath']) {
+            // Create the path with at the end the name of the picture as a folder
+            prefix_key = operationsJSON['toBucketPath'] + originalImagePath.split('/').slice(-1); 
+        }
+        var key = prefix_key + '/' + picturePath
         try {
             const putImageCommand = new PutObjectCommand({
                 Body: transformedImage,

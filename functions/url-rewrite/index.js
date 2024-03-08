@@ -17,6 +17,10 @@ function handler(event) {
                     var toBucket = request.querystring[operation]['value'];
                     normalizedOperations['toBucket'] = toBucket;
                     break;
+                case 'to_bucket_path':
+                    var toBucketPath = request.querystring[operation]['value'];
+                    normalizedOperations['toBucketPath'] = toBucketPath;
+                    break;
                 case 'to_bucket_region':
                     var toBucketRegion = request.querystring[operation]['value'];
                     normalizedOperations['toBucketRegion'] = toBucketRegion;
@@ -82,6 +86,7 @@ function handler(event) {
             var normalizedOperationsArray = [];
             if (normalizedOperations.fromBucket) normalizedOperationsArray.push('fromBucket='+normalizedOperations.fromBucket);
             if (normalizedOperations.toBucket) normalizedOperationsArray.push('toBucket='+normalizedOperations.toBucket);
+            if (normalizedOperations.toBucketPath) normalizedOperationsArray.push('toBucketPath='+normalizedOperations.totoBucketPathBucket);
             if (normalizedOperations.toBucketRegion) normalizedOperationsArray.push('toBucketRegion='+normalizedOperations.toBucketRegion);
             if (normalizedOperations.ratio) normalizedOperationsArray.push('ratio='+normalizedOperations.ratio);
             if (normalizedOperations.format) normalizedOperationsArray.push('format='+normalizedOperations.format);
