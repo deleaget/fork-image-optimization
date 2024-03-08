@@ -86,7 +86,7 @@ function handler(event) {
             var normalizedOperationsArray = [];
             if (normalizedOperations.fromBucket) normalizedOperationsArray.push('fromBucket='+normalizedOperations.fromBucket);
             if (normalizedOperations.toBucket) normalizedOperationsArray.push('toBucket='+normalizedOperations.toBucket);
-            if (normalizedOperations.toBucketPath) normalizedOperationsArray.push('toBucketPath='+normalizedOperations.totoBucketPathBucket);
+            if (normalizedOperations.toBucketPath) normalizedOperationsArray.push('toBucketPath='+decodeURIComponent(normalizedOperations.toBucketPath));
             if (normalizedOperations.toBucketRegion) normalizedOperationsArray.push('toBucketRegion='+normalizedOperations.toBucketRegion);
             if (normalizedOperations.ratio) normalizedOperationsArray.push('ratio='+normalizedOperations.ratio);
             if (normalizedOperations.format) normalizedOperationsArray.push('format='+normalizedOperations.format);

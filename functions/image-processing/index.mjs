@@ -15,7 +15,7 @@ export const handler = async (event) => {
     // Validate if this is a GET request
     if (!event.requestContext || !event.requestContext.http || !(event.requestContext.http.method === 'GET')) return sendError(400, 'Bad Request', null);
     // An example of expected path is /images/rio/1.jpeg/format=auto,width=100 or /images/rio/1.jpeg/original where /images/rio/1.jpeg is the path of the original image
-    var imagePathArray = path.split('/');
+    var imagePathArray = event.requestContext.http.path.split('/');
     // get the requested image operations
     var operationsPrefix = imagePathArray.pop();
     // get the original image path images/rio/1.jpg
