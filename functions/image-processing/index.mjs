@@ -120,9 +120,9 @@ export const handler = async (event) => {
 
         var toBucketRegion = transformedBucketRegion;
         var prefix_key = originalImagePath;
-        if (operationsJSON['toBucketPath']) {
+        if (toBucketPath) {
             // Create the path with at the end the name of the picture as a folder
-            prefix_key = operationsJSON['toBucketPath'] + originalImagePath.split('/').slice(-1); 
+            prefix_key = toBucketPath + originalImagePath.split('/').slice(-1); 
         }
         var key = prefix_key + '/' + picturePath
         try {

@@ -18,7 +18,7 @@ function handler(event) {
                     normalizedOperations['toBucket'] = toBucket;
                     break;
                 case 'to_bucket_path':
-                    var toBucketPath = request.querystring[operation]['value'];
+                    var toBucketPath = encodeURIComponent(request.querystring[operation]['value']);
                     normalizedOperations['toBucketPath'] = toBucketPath;
                     break;
                 case 'to_bucket_region':
@@ -86,13 +86,13 @@ function handler(event) {
             var normalizedOperationsArray = [];
             if (normalizedOperations.fromBucket) normalizedOperationsArray.push('fromBucket='+normalizedOperations.fromBucket);
             if (normalizedOperations.toBucket) normalizedOperationsArray.push('toBucket='+normalizedOperations.toBucket);
-            if (normalizedOperations.toBucketPath) normalizedOperationsArray.push('toBucketPath='+normalizedOperations.toBucketPath);
             if (normalizedOperations.toBucketRegion) normalizedOperationsArray.push('toBucketRegion='+normalizedOperations.toBucketRegion);
             if (normalizedOperations.ratio) normalizedOperationsArray.push('ratio='+normalizedOperations.ratio);
             if (normalizedOperations.format) normalizedOperationsArray.push('format='+normalizedOperations.format);
             if (normalizedOperations.quality) normalizedOperationsArray.push('quality='+normalizedOperations.quality);
             if (normalizedOperations.width) normalizedOperationsArray.push('width='+normalizedOperations.width);
             if (normalizedOperations.height) normalizedOperationsArray.push('height='+normalizedOperations.height);
+            if (normalizedOperations.toBucketPath) normalizedOperationsArray.push('toBucketPath='+normalizedOperations.toBucketPath);
 
             if (normalizedOperations.ratio || normalizedOperations.format || normalizedOperations.quality || normalizedOperations.width || normalizedOperations.height) {
                 request.uri = originalImagePath + '/' + normalizedOperationsArray.join(',');   
