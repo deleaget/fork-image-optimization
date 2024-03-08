@@ -26,6 +26,8 @@ export const handler = async (event) => {
     // get the original image bucket
     var originalBucket = operationsJSON['fromBucket']
     var transformedBucket = operationsJSON['toBucket']
+    var toBucketPath = null
+    if (operationsJSON['toBucketPath']) toBucketPath = decodeURIComponent(operationsJSON['toBucketPath'])
     var transformedBucketRegion = operationsJSON['toBucketRegion']
     // initialize default response object (original image)
     var response = { bucket: originalBucket, key: originalImagePath, transformed: false };
